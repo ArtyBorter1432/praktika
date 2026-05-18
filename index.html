@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroShop - Интернет-магазин электроники</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <a href="/" class="logo">ElectroShop</a>
+            <nav>
+                <a href="index.html">Каталог</a>
+                <a href="pages/cart.html">Корзина (<span id="cartCount">0</span>)</a>
+                <div id="authNav">
+                    <a href="pages/profile.html" class="btn-outline">Вход / Регистрация</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <input type="text" id="searchInput" class="search-box" placeholder="Поиск товаров...">
+            <select id="categoryFilter" class="filter-box">
+                <option value="all">Все категории</option>
+                <option value="phones">Смартфоны</option>
+                <option value="laptops">Ноутбуки</option>
+                <option value="accessories">Аксессуары</option>
+                <option value="audio">Аудиотехника</option>
+            </select>
+        </section>
+
+        <div id="productsGrid" class="products-grid">
+            <!-- Товары будут загружены через JavaScript -->
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

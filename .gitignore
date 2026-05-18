@@ -1,0 +1,20 @@
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Логи
+*.log
+npm-debug.log*
+
+# Временные файлы
+tmp/
+temp/
+
+# Файлы пользователя (заполнится при регистрации)
+users.json
