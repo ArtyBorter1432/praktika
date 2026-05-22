@@ -28,7 +28,6 @@ ORDER BY price DESC;
 INSERT INTO products (name, price, category_id, description, stock, rating) 
 VALUES ('Google Pixel 8 Pro', 84990, 1, '6.7″ OLED, Google Tensor G3, 50MP камера', 8, 4.6);
 
--- Проверка добавления
 SELECT * FROM products WHERE name = 'Google Pixel 8 Pro';
 
 -- =====================================================
