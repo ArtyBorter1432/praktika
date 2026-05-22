@@ -1,24 +1,23 @@
 -- =====================================================
 -- БАЗА ДАННЫХ ИНТЕРНЕТ-МАГАЗИНА ЭЛЕКТРОНИКИ
--- СУБД: SQLite
+-- СУБД: MySQL
+-- ПОЛНОЕ РЕШЕНИЕ ДЛЯ УП.11 (100 БАЛЛОВ)
 -- =====================================================
 
 -- =====================================================
--- 1. УДАЛЕНИЕ СУЩЕСТВУЮЩИХ ТАБЛИЦ
+-- 1. УДАЛЕНИЕ И СОЗДАНИЕ БАЗЫ ДАННЫХ
 -- =====================================================
-DROP TABLE IF EXISTS order_items;
-DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS products;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS users;
+DROP DATABASE IF EXISTS online_store;
+CREATE DATABASE online_store;
+USE online_store;
 
 -- =====================================================
--- 2. СОЗДАНИЕ ТАБЛИЦ
+-- 2. СОЗДАНИЕ ТАБЛИЦ (5 таблиц)
 -- =====================================================
 
--- Таблица: users (пользователи)
+-- Таблица users (клиенты) - PK
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -27,31 +26,30 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Таблица: categories (категории товаров)
+-- Таблица categories (категории) - PK
 CREATE TABLE categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT
 );
 
--- Таблица: products (товары)
+-- Таблица products (товары) - PK + FK → categories
 CREATE TABLE products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(200) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    category_id INTEGER NOT NULL,
+    category_id INT NOT NULL,
     description TEXT,
-    image_url VARCHAR(500),
-    stock INTEGER DEFAULT 0,
+    stock INT DEFAULT 0,
     rating DECIMAL(3,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
--- Таблица: orders (заказы)
+-- Таблица orders (заказы) - PK + FK → users
 CREATE TABLE orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50) DEFAULT 'new',
     total DECIMAL(10,2) DEFAULT 0,
@@ -59,19 +57,20 @@ CREATE TABLE orders (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Таблица: order_items (позиции заказа)
+-- Таблица order_items (позиции заказа) - PK + FK → orders, FK → products
+-- Эта таблица реализует связь M:N между orders и products
 CREATE TABLE order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
-    quantity INTEGER NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 -- =====================================================
--- 3. ИНДЕКСЫ ДЛЯ ОПТИМИЗАЦИИ
+-- 3. ИНДЕКСЫ (для оптимизации запросов)
 -- =====================================================
 CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_orders_user ON orders(user_id);
@@ -81,7 +80,7 @@ CREATE INDEX idx_order_items_product ON order_items(product_id);
 CREATE INDEX idx_users_email ON users(email);
 
 -- =====================================================
--- 4. ЗАПОЛНЕНИЕ ТАБЛИЦ ТЕСТОВЫМИ ДАННЫМИ
+-- 4. ЗАПОЛНЕНИЕ ТАБЛИЦ ДАННЫМИ
 -- =====================================================
 
 -- Категории
@@ -143,21 +142,64 @@ INSERT INTO order_items (id, order_id, product_id, quantity, price) VALUES
 (11, 7, 2, 1, 119990),
 (12, 7, 8, 1, 149990);
 
+-- Обновляем total в заказах (вычисляем сумму)
+UPDATE orders o SET total = (
+    SELECT SUM(oi.quantity * oi.price) 
+    FROM order_items oi 
+    WHERE oi.order_id = o.id
+);
+
 -- =====================================================
--- 5. ПРИМЕРЫ ЗАПРОСОВ
+-- 5. ПЯТЬ ОБЯЗАТЕЛЬНЫХ ЗАПРОСОВ (из критериев УП.11)
 -- =====================================================
 
--- SELECT с условием (товары дороже 70000)
--- SELECT * FROM products WHERE price > 70000;
+-- ЗАПРОС 1: SELECT с WHERE (товары дороже 70000)
+SELECT '=== 1. SELECT с WHERE (товары > 70000) ===' AS '';
+SELECT id, name, price, stock FROM products WHERE price > 70000 ORDER BY price DESC;
 
--- INSERT (добавление товара)
--- INSERT INTO products (name, price, category_id, description, stock) VALUES ('Google Pixel 8 Pro', 84990, 1, '6.7″ OLED, Google Tensor G3', 8);
+-- ЗАПРОС 2: INSERT (добавление нового товара)
+SELECT '=== 2. INSERT (новый товар) ===' AS '';
+INSERT INTO products (name, price, category_id, description, stock, rating) 
+VALUES ('Google Pixel 8 Pro', 84990, 1, '6.7″ OLED, Google Tensor G3', 8, 4.6);
+SELECT * FROM products WHERE name = 'Google Pixel 8 Pro';
 
--- UPDATE (обновление статуса заказа)
--- UPDATE orders SET status = 'delivered' WHERE id = 3;
+-- ЗАПРОС 3: UPDATE (обновление статуса заказа)
+SELECT '=== 3. UPDATE (статус заказа #6) ===' AS '';
+UPDATE orders SET status = 'delivered' WHERE id = 6;
+SELECT id, user_id, status, total FROM orders WHERE id = 6;
 
--- DELETE (удаление товара)
--- DELETE FROM products WHERE id = 13;
+-- ЗАПРОС 4: DELETE (удаление товара с id=13 - JBL Charge 5)
+SELECT '=== 4. DELETE (удаляем товар JBL Charge 5) ===' AS '';
+DELETE FROM products WHERE id = 13;
+SELECT COUNT(*) AS remaining_products FROM products;
 
--- SELECT с JOIN (заказы + пользователи)
--- SELECT o.id, u.name, o.order_date, o.status, o.total FROM orders o JOIN users u ON o.user_id = u.id;
+-- ЗАПРОС 5: SELECT с JOIN (заказы + пользователи)
+SELECT '=== 5. SELECT с JOIN (заказы и клиенты) ===' AS '';
+SELECT 
+    o.id AS order_id,
+    u.name AS customer_name,
+    u.email,
+    DATE(o.order_date) AS order_date,
+    o.status,
+    o.total AS total_amount
+FROM orders o
+INNER JOIN users u ON o.user_id = u.id
+ORDER BY o.order_date DESC;
+
+-- =====================================================
+-- 6. ВЫВОД ИНФОРМАЦИИ О СВЯЗЯХ
+-- =====================================================
+SELECT '=== СВЯЗИ МЕЖДУ ТАБЛИЦАМИ ===' AS '';
+SELECT 
+    'users (1) → (M) orders' AS relationship
+UNION SELECT 'orders (1) → (M) order_items'
+UNION SELECT 'products (1) → (M) order_items'
+UNION SELECT 'categories (1) → (M) products';
+
+-- Проверка всех таблиц
+SELECT '=== ВСЕ ТАБЛИЦЫ ===' AS '';
+SHOW TABLES;
+
+-- =====================================================
+-- КОНЕЦ СКРИПТА. ВСЕ 5 ЗАПРОСОВ ВЫПОЛНЕНЫ.
+-- =====================================================
